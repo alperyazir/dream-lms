@@ -2571,6 +2571,7 @@ export type PublisherAccountCreate = {
   username?: string | null;
   email?: string;
   full_name: string;
+  password?: string | null;
 };
 
 /**
@@ -3823,6 +3824,7 @@ export type SupervisorCreateAPI = {
   username: string;
   user_email?: string | null;
   full_name: string;
+  password?: string | null;
 };
 
 /**
@@ -3867,6 +3869,7 @@ export type TeacherCreateAPI = {
   full_name: string;
   school_id: string;
   subject_specialization?: string | null;
+  password?: string | null;
 };
 
 /**

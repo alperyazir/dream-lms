@@ -522,8 +522,8 @@ def create_teacher(
             detail="Publisher role is deprecated. Publishers are managed in Dream Central Storage.",
         )
 
-    # Generate secure temporary password
-    temp_password = generate_temp_password()
+    # Use provided password or auto-generate
+    temp_password = teacher_in.password if teacher_in.password else generate_temp_password()
 
     # Create Teacher record data
     teacher_create = TeacherCreate(
@@ -2517,8 +2517,8 @@ async def create_publisher_account(
             detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found",
         )
 
-    # Generate secure temporary password
-    temp_password = generate_temp_password()
+    # Use provided password or auto-generate
+    temp_password = account_in.password if account_in.password else generate_temp_password()
 
     # Create user with publisher role
     from app.models import UserCreate

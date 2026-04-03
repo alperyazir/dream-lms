@@ -6,6 +6,8 @@ import {
   ChevronRight,
   Copy,
   Edit,
+  Eye,
+  EyeOff,
   KeyRound,
   Plus,
   Search,
@@ -106,7 +108,10 @@ function AdminTeachers() {
     full_name: "",
     school_id: "",
     subject_specialization: "",
+    password: undefined,
   });
+  const [autoGeneratePassword, setAutoGeneratePassword] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [editTeacher, setEditTeacher] = useState<TeacherUpdate>({
     school_id: undefined,
     subject_specialization: "",
@@ -161,7 +166,10 @@ function AdminTeachers() {
         full_name: "",
         school_id: "",
         subject_specialization: "",
+        password: undefined,
       });
+      setAutoGeneratePassword(true);
+      setShowPassword(false);
 
       if (response.temporary_password) {
         // Show one-time password dialog
@@ -299,6 +307,18 @@ function AdminTeachers() {
         "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
       );
       return;
+    }
+
+    // Validate password if not auto-generating
+    if (!autoGeneratePassword && newTeacher.password) {
+      if (newTeacher.password.length < 4) {
+        showErrorToast("Password must be at least 4 characters");
+        return;
+      }
+      if (newTeacher.password.length > 50) {
+        showErrorToast("Password must be 50 characters or less");
+        return;
+      }
     }
 
     createTeacherMutation.mutate(newTeacher);
@@ -823,6 +843,63 @@ function AdminTeachers() {
                   })
                 }
               />
+            </div>
+            {/* Password field with auto-generate option */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="teacher-password">Password</Label>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={autoGeneratePassword}
+                    onCheckedChange={(checked) => {
+                      setAutoGeneratePassword(checked === true);
+                      if (checked) {
+                        setNewTeacher({ ...newTeacher, password: undefined });
+                      }
+                    }}
+                  />
+                  Auto-generate
+                </label>
+              </div>
+              <div className="relative">
+                <Input
+                  id="teacher-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={
+                    autoGeneratePassword
+                      ? "Will be auto-generated"
+                      : "Enter password (4+ chars)"
+                  }
+                  value={newTeacher.password || ""}
+                  disabled={autoGeneratePassword}
+                  onChange={(e) =>
+                    setNewTeacher({
+                      ...newTeacher,
+                      password: e.target.value || undefined,
+                    })
+                  }
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={autoGeneratePassword}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {autoGeneratePassword
+                  ? "A secure password will be generated automatically"
+                  : "Minimum 4 characters"}
+              </p>
             </div>
           </div>
           <DialogFooter>

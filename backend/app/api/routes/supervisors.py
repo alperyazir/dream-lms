@@ -227,8 +227,8 @@ async def create_supervisor(
             detail="A user with this username already exists",
         )
 
-    # Generate temporary password
-    temp_password = generate_temp_password(length=12)
+    # Use provided password or auto-generate
+    temp_password = supervisor_in.password if supervisor_in.password else generate_temp_password(length=12)
 
     # Create the supervisor user
     # Store encrypted viewable password for admin visibility

@@ -6,6 +6,8 @@ import {
   ChevronRight,
   Copy,
   Edit,
+  Eye,
+  EyeOff,
   KeyRound,
   Loader2,
   Lock,
@@ -119,11 +121,16 @@ function AdminPublishers() {
   } | null>(null);
   const [passwordCopied, setPasswordCopied] = useState(false);
 
+  // Password state for creation
+  const [autoGeneratePassword, setAutoGeneratePassword] = useState(true);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+
   // Form states
   const [newAccount, setNewAccount] = useState<PublisherAccountCreate>({
     dcs_publisher_id: 0,
     username: "",
     full_name: "",
+    password: undefined,
   });
   const [editAccount, setEditAccount] = useState<PublisherAccountUpdate>({
     dcs_publisher_id: null,
@@ -334,7 +341,10 @@ function AdminPublishers() {
       dcs_publisher_id: 0,
       username: "",
       full_name: "",
+      password: undefined,
     });
+    setAutoGeneratePassword(true);
+    setShowCreatePassword(false);
   };
 
   const handleOpenAddDialog = () => {
@@ -350,6 +360,19 @@ function AdminPublishers() {
       showErrorToast("Please fill in all required fields");
       return;
     }
+
+    // Validate password if not auto-generating
+    if (!autoGeneratePassword && newAccount.password) {
+      if (newAccount.password.length < 4) {
+        showErrorToast("Password must be at least 4 characters");
+        return;
+      }
+      if (newAccount.password.length > 50) {
+        showErrorToast("Password must be 50 characters or less");
+        return;
+      }
+    }
+
     createMutation.mutate(newAccount);
   };
 
@@ -818,6 +841,64 @@ function AdminPublishers() {
               />
               <p className="text-xs text-muted-foreground">
                 Auto-generated from full name (editable)
+              </p>
+            </div>
+
+            {/* Password field with auto-generate option */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="publisher-password">Password</Label>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={autoGeneratePassword}
+                    onCheckedChange={(checked) => {
+                      setAutoGeneratePassword(checked === true);
+                      if (checked) {
+                        setNewAccount({ ...newAccount, password: undefined });
+                      }
+                    }}
+                  />
+                  Auto-generate
+                </label>
+              </div>
+              <div className="relative">
+                <Input
+                  id="publisher-password"
+                  type={showCreatePassword ? "text" : "password"}
+                  placeholder={
+                    autoGeneratePassword
+                      ? "Will be auto-generated"
+                      : "Enter password (4+ chars)"
+                  }
+                  value={newAccount.password || ""}
+                  disabled={autoGeneratePassword}
+                  onChange={(e) =>
+                    setNewAccount({
+                      ...newAccount,
+                      password: e.target.value || undefined,
+                    })
+                  }
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowCreatePassword(!showCreatePassword)}
+                  disabled={autoGeneratePassword}
+                >
+                  {showCreatePassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {autoGeneratePassword
+                  ? "A secure password will be generated automatically"
+                  : "Minimum 4 characters"}
               </p>
             </div>
 

@@ -359,6 +359,8 @@ class TeacherCreateAPI(SQLModel):
     full_name: str = Field(max_length=255)
     school_id: uuid.UUID
     subject_specialization: str | None = Field(default=None, max_length=255)
+    # Optional password - if not provided, auto-generated
+    password: str | None = Field(default=None, min_length=1, max_length=50)
 
 
 # --- Student Models ---
@@ -497,6 +499,8 @@ class SupervisorCreateAPI(SQLModel):
 
     username: str = Field(min_length=3, max_length=50)
     full_name: str = Field(max_length=255)
+    # Optional password - if not provided, auto-generated
+    password: str | None = Field(default=None, min_length=1, max_length=50)
 
 
 class SupervisorUpdate(SQLModel):

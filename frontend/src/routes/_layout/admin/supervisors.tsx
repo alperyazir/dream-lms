@@ -6,6 +6,8 @@ import {
   ChevronRight,
   Copy,
   Edit,
+  Eye,
+  EyeOff,
   KeyRound,
   Plus,
   Search,
@@ -99,7 +101,10 @@ function AdminSupervisors() {
   const [newSupervisor, setNewSupervisor] = useState<SupervisorCreateAPI>({
     username: "",
     full_name: "",
+    password: undefined,
   });
+  const [autoGeneratePassword, setAutoGeneratePassword] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [editSupervisor, setEditSupervisor] = useState<SupervisorUpdate>({
     full_name: "",
     username: "",
@@ -145,7 +150,10 @@ function AdminSupervisors() {
       setNewSupervisor({
         username: "",
         full_name: "",
+        password: undefined,
       });
+      setAutoGeneratePassword(true);
+      setShowPassword(false);
 
       if (response.temporary_password) {
         // Show one-time password dialog
@@ -291,6 +299,18 @@ function AdminSupervisors() {
         "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
       );
       return;
+    }
+
+    // Validate password if not auto-generating
+    if (!autoGeneratePassword && newSupervisor.password) {
+      if (newSupervisor.password.length < 4) {
+        showErrorToast("Password must be at least 4 characters");
+        return;
+      }
+      if (newSupervisor.password.length > 50) {
+        showErrorToast("Password must be 50 characters or less");
+        return;
+      }
     }
 
     createSupervisorMutation.mutate(newSupervisor);
@@ -626,8 +646,7 @@ function AdminSupervisors() {
           <DialogHeader>
             <DialogTitle>Add New Supervisor</DialogTitle>
             <DialogDescription>
-              Create a new supervisor account. A temporary password will be
-              generated.
+              Create a new supervisor account
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -673,6 +692,63 @@ function AdminSupervisors() {
               />
               <p className="text-xs text-muted-foreground">
                 3-50 characters, letters, numbers, underscore, hyphen, or dot
+              </p>
+            </div>
+            {/* Password field with auto-generate option */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="supervisor-password">Password</Label>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={autoGeneratePassword}
+                    onCheckedChange={(checked) => {
+                      setAutoGeneratePassword(checked === true);
+                      if (checked) {
+                        setNewSupervisor({ ...newSupervisor, password: undefined });
+                      }
+                    }}
+                  />
+                  Auto-generate
+                </label>
+              </div>
+              <div className="relative">
+                <Input
+                  id="supervisor-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={
+                    autoGeneratePassword
+                      ? "Will be auto-generated"
+                      : "Enter password (4+ chars)"
+                  }
+                  value={newSupervisor.password || ""}
+                  disabled={autoGeneratePassword}
+                  onChange={(e) =>
+                    setNewSupervisor({
+                      ...newSupervisor,
+                      password: e.target.value || undefined,
+                    })
+                  }
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={autoGeneratePassword}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {autoGeneratePassword
+                  ? "A secure password will be generated automatically"
+                  : "Minimum 4 characters"}
               </p>
             </div>
           </div>

@@ -98,6 +98,8 @@ class PublisherAccountCreate(BaseModel):
         description="Username (auto-generated from full_name if not provided)",
     )
     full_name: str = Field(max_length=255)
+    # Optional password - if not provided, auto-generated
+    password: str | None = Field(default=None, min_length=1, max_length=50)
 
 
 class PublisherAccountUpdate(BaseModel):
