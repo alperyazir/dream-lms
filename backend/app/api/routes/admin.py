@@ -523,7 +523,9 @@ def create_teacher(
         )
 
     # Use provided password or auto-generate
-    temp_password = teacher_in.password if teacher_in.password else generate_temp_password()
+    temp_password = (
+        teacher_in.password if teacher_in.password else generate_temp_password()
+    )
 
     # Create Teacher record data
     teacher_create = TeacherCreate(
@@ -2518,7 +2520,9 @@ async def create_publisher_account(
         )
 
     # Use provided password or auto-generate
-    temp_password = account_in.password if account_in.password else generate_temp_password()
+    temp_password = (
+        account_in.password if account_in.password else generate_temp_password()
+    )
 
     # Create user with publisher role
     from app.models import UserCreate
