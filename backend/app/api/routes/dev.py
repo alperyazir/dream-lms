@@ -42,7 +42,7 @@ def get_quick_login_users(
         result[role.value] = [
             {
                 "username": u.username,
-                "email": u.email,
+                "email": None,
             }
             for u in users
         ]

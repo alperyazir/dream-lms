@@ -492,7 +492,6 @@ def create_teacher(
     **Permissions:** Admin OR Publisher
 
     - **username**: Username for user account (3-50 characters, alphanumeric, underscore, or hyphen)
-    - **user_email**: Email for user account
     - **full_name**: Full name for user account
     - **school_id**: ID of the school (must belong to this publisher if Publisher role)
     - **subject_specialization**: Optional subject specialization
@@ -699,7 +698,6 @@ def update_teacher(
     - **teacher_id**: ID of the teacher to update
     - **school_id**: Optional new school ID
     - **subject_specialization**: Optional new subject specialization
-    - **user_email**: Optional new user email
     - **user_full_name**: Optional new user full name
 
     Returns the updated teacher record.
@@ -727,9 +725,9 @@ def update_teacher(
 
     for field, value in update_data.items():
         if field in ["user_email", "user_full_name", "user_username"]:
-            # Map to user model field names
+            # Map to user model field names (user_email is ignored - field removed)
             if field == "user_email":
-                user_fields["email"] = value
+                pass  # email field no longer exists on User
             elif field == "user_full_name":
                 user_fields["full_name"] = value
             elif field == "user_username":
@@ -913,10 +911,8 @@ def create_student(
     **Permissions:** Admin, Supervisor, Publisher, OR Teacher
 
     - **username**: Username for user account (3-50 characters, alphanumeric, underscore, or hyphen)
-    - **user_email**: Email for user account (optional)
     - **full_name**: Full name for user account
     - **grade_level**: Optional grade level
-    - **parent_email**: Optional parent email
     - **password**: Optional custom password (4-50 chars). If not provided, auto-generated.
 
     Returns user, password (for sharing), and student record.
@@ -953,7 +949,6 @@ def create_student(
     # Build student response with user information
     student_data = StudentPublic(
         grade_level=student.grade_level,
-        parent_email=None,
         id=student.id,
         user_id=student.user_id,
         user_email=None,
@@ -1178,7 +1173,7 @@ def list_students(
 
     - **skip**: Number of records to skip (default: 0)
     - **limit**: Maximum number of records to return (default: 20, max: 100)
-    - **search**: Optional search by name, username, email, grade, or parent email
+    - **search**: Optional search by name, username, or grade
 
     Returns paginated list of students with total count.
     """
@@ -1216,7 +1211,6 @@ def list_students(
 
         student_data = StudentPublic(
             grade_level=s.grade_level,
-            parent_email=None,
             id=s.id,
             user_id=s.user_id,
             user_email=None,
@@ -1257,10 +1251,8 @@ def update_student(
     Update a student by ID.
 
     - **student_id**: ID of the student to update
-    - **user_email**: Optional new user email
     - **user_full_name**: Optional new user full name
     - **grade_level**: Optional new grade level
-    - **parent_email**: Optional new parent email
 
     Returns the updated student record.
     """
@@ -1287,9 +1279,9 @@ def update_student(
 
     for field, value in update_data.items():
         if field in ["user_email", "user_full_name", "user_username"]:
-            # Map to user model field names
+            # Map to user model field names (user_email is ignored - field removed)
             if field == "user_email":
-                user_fields["email"] = value
+                pass  # email field no longer exists on User
             elif field == "user_full_name":
                 user_fields["full_name"] = value
             elif field == "user_username":
@@ -1330,7 +1322,6 @@ def update_student(
     # Build response with user information
     return StudentPublic(
         grade_level=student.grade_level,
-        parent_email=None,
         id=student.id,
         user_id=student.user_id,
         user_email=None,
@@ -1519,7 +1510,7 @@ async def bulk_import_publishers(
     """
     Bulk import publishers from Excel file.
 
-    Expected Excel columns: First Name, Last Name, Email, Company Name, Contact Email
+    Expected Excel columns: First Name, Last Name, Company Name, Contact Email
 
     Returns BulkImportResponse with created count and credentials list.
     """
@@ -1558,7 +1549,6 @@ async def bulk_import_publishers(
     required_headers = [
         "First Name",
         "Last Name",
-        "Email",
         "Company Name",
         "Contact Email",
     ]
@@ -1671,7 +1661,7 @@ async def bulk_import_teachers(
     """
     Bulk import teachers from Excel file.
 
-    Expected Excel columns: First Name, Last Name, Email, School ID, Subject Specialization
+    Expected Excel columns: First Name, Last Name, School ID, Subject Specialization
 
     Returns BulkImportResponse with created count and credentials list.
     """
@@ -1710,7 +1700,6 @@ async def bulk_import_teachers(
     required_headers = [
         "First Name",
         "Last Name",
-        "Email",
         "School ID",
         "Subject Specialization",
     ]
@@ -1844,7 +1833,7 @@ async def bulk_import_students(
     """
     Bulk import students from Excel file.
 
-    Expected Excel columns: First Name, Last Name, Email, Grade Level, Parent Email
+    Expected Excel columns: First Name, Last Name, Grade Level
 
     Returns BulkImportResponse with created count and credentials list.
     """
@@ -1883,9 +1872,7 @@ async def bulk_import_students(
     required_headers = [
         "First Name",
         "Last Name",
-        "Email",
         "Grade Level",
-        "Parent Email",
     ]
     if not validate_excel_headers(headers, required_headers):
         raise HTTPException(
@@ -1925,9 +1912,6 @@ async def bulk_import_students(
             grade_level = (
                 row.get("Grade Level", "").strip() if row.get("Grade Level") else None
             )
-            parent_email = (
-                row.get("Parent Email", "").strip() if row.get("Parent Email") else None
-            )
 
             # Generate temporary password
             temp_password = generate_temp_password()
@@ -1939,7 +1923,6 @@ async def bulk_import_students(
             student_create = StudentCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
                 grade_level=grade_level,
-                parent_email=parent_email,
             )
 
             # Create user and student atomically

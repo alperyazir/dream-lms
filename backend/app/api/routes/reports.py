@@ -301,7 +301,7 @@ async def download_report(
             student_row = student_result.first()
             if student_row:
                 student, user = student_row
-                student_name = user.full_name or user.email
+                student_name = user.full_name or user.username or "Unknown"
                 logger.info(f"DEBUG DOWNLOAD: Found student name: {student_name}")
             else:
                 logger.warning(
@@ -333,7 +333,7 @@ async def download_report(
             teacher_row = teacher_result.first()
             if teacher_row:
                 teacher, user = teacher_row
-                teacher_name = user.full_name or user.email
+                teacher_name = user.full_name or user.username or "Unknown"
         except Exception:
             pass  # Use fallback filename if lookup fails
 

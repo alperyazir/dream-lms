@@ -85,9 +85,7 @@ async def get_allowed_recipients(
 
     if user_role == UserRole.admin:
         # Admins can message all teachers, publishers, and students
-        query = select(
-            User.id, User.full_name, User.email, User.role, User.dcs_publisher_id
-        ).where(
+        query = select(User.id, User.full_name, User.role, User.dcs_publisher_id).where(
             User.role.in_([UserRole.teacher, UserRole.publisher, UserRole.student]),
             User.id != user_id,
         )
@@ -96,9 +94,7 @@ async def get_allowed_recipients(
 
     elif user_role == UserRole.supervisor:
         # Supervisors can message all users (admin, publisher, teacher, student)
-        query = select(
-            User.id, User.full_name, User.email, User.role, User.dcs_publisher_id
-        ).where(
+        query = select(User.id, User.full_name, User.role, User.dcs_publisher_id).where(
             User.role.in_(
                 [UserRole.admin, UserRole.publisher, UserRole.teacher, UserRole.student]
             ),
@@ -109,9 +105,7 @@ async def get_allowed_recipients(
 
     elif user_role == UserRole.publisher:
         # Publishers can message all admins and all teachers
-        query = select(
-            User.id, User.full_name, User.email, User.role, User.dcs_publisher_id
-        ).where(
+        query = select(User.id, User.full_name, User.role, User.dcs_publisher_id).where(
             User.role.in_([UserRole.admin, UserRole.teacher]),
             User.id != user_id,
         )
@@ -131,7 +125,6 @@ async def get_allowed_recipients(
                 select(
                     User.id,
                     User.full_name,
-                    User.email,
                     User.role,
                     User.dcs_publisher_id,
                 )
@@ -161,9 +154,7 @@ async def get_allowed_recipients(
         # Students can only message teachers of their classes
         # Start from ClassStudent filtered by student_id to use index
         query = (
-            select(
-                User.id, User.full_name, User.email, User.role, User.dcs_publisher_id
-            )
+            select(User.id, User.full_name, User.role, User.dcs_publisher_id)
             .select_from(ClassStudent)
             .where(ClassStudent.student_id == student_id)
             .join(Class, Class.id == ClassStudent.class_id)
@@ -517,7 +508,6 @@ async def get_conversations(
         select(
             latest_per_partner.c.partner_id,
             User.full_name,
-            User.email,
             User.role,
             DirectMessage.body.label("last_message"),
             latest_per_partner.c.max_sent_at,

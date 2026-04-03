@@ -76,10 +76,8 @@ def create_student(
     Create a new student.
 
     - **username**: Username for user account (3-50 characters, alphanumeric, underscore, or hyphen)
-    - **user_email**: Email for user account
     - **full_name**: Full name for user account
     - **grade_level**: Optional grade level
-    - **parent_email**: Optional parent email
 
     Returns user, temp_password, and student record.
     """
@@ -113,7 +111,6 @@ def create_student(
     student_create = StudentCreate(
         user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
         grade_level=student_in.grade_level,
-        parent_email=student_in.parent_email,
     )
 
     # Create user and student atomically
@@ -129,7 +126,6 @@ def create_student(
     # Build student response with user information
     student_data = StudentPublic(
         grade_level=student.grade_level,
-        parent_email=None,
         id=student.id,
         user_id=student.user_id,
         user_email=None,
@@ -167,7 +163,7 @@ async def bulk_import_students(
     """
     Bulk import students from Excel file.
 
-    Expected Excel columns: First Name, Last Name, Email, Grade Level, Parent Email
+    Expected Excel columns: First Name, Last Name, Grade Level
 
     Returns BulkImportResponse with created count and credentials list.
     """
@@ -218,9 +214,7 @@ async def bulk_import_students(
         required_headers = [
             "First Name",
             "Last Name",
-            "Email",
             "Grade Level",
-            "Parent Email",
         ]
         if not validate_excel_headers(headers, required_headers):
             raise HTTPException(
@@ -260,9 +254,6 @@ async def bulk_import_students(
             grade_level = (
                 row.get("Grade Level", "").strip() if row.get("Grade Level") else None
             )
-            parent_email = (
-                row.get("Parent Email", "").strip() if row.get("Parent Email") else None
-            )
 
             # Generate temporary password
             temp_password = generate_temp_password()
@@ -274,7 +265,6 @@ async def bulk_import_students(
             student_create = StudentCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
                 grade_level=grade_level,
-                parent_email=parent_email,
             )
 
             # Create user and student atomically
@@ -421,7 +411,6 @@ async def list_my_students(
 
         student_data = StudentPublic(
             grade_level=s.grade_level,
-            parent_email=None,
             id=s.id,
             user_id=s.user_id,
             user_email=None,
@@ -466,9 +455,8 @@ def update_student(
 
     Teachers can update:
     - grade_level
-    - parent_email
 
-    Note: User information (name, email, username) cannot be changed through this endpoint.
+    Note: User information (name, username) cannot be changed through this endpoint.
     """
     # Get Teacher record
     teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
@@ -507,7 +495,7 @@ def update_student(
             detail="Cannot update a student that is not in your classes",
         )
 
-    # Update student fields (grade_level, parent_email)
+    # Update student fields (grade_level)
     update_data = student_in.model_dump(exclude_unset=True)
 
     # Separate user fields from student fields
@@ -516,9 +504,9 @@ def update_student(
 
     for key, value in update_data.items():
         if key in ["user_email", "user_username", "user_full_name"]:
-            # Map to User model fields
+            # Map to User model fields (user_email is ignored - field removed)
             if key == "user_email":
-                user_fields["email"] = value
+                pass  # email field no longer exists on User
             elif key == "user_username":
                 user_fields["username"] = value
             elif key == "user_full_name":
@@ -561,7 +549,6 @@ def update_student(
 
     return StudentPublic(
         grade_level=student.grade_level,
-        parent_email=None,
         id=student.id,
         user_id=student.user_id,
         user_email=None,
@@ -1239,7 +1226,6 @@ def get_class_students(
         user = session.get(User, s.user_id)
         student_data = StudentPublic(
             grade_level=s.grade_level,
-            parent_email=None,
             id=s.id,
             user_id=s.user_id,
             user_email=None,
@@ -1335,7 +1321,6 @@ def get_students_for_classes(
     for student, class_id, user in results:
         student_data = StudentPublic(
             grade_level=student.grade_level,
-            parent_email=None,
             id=student.id,
             user_id=student.user_id,
             user_email=None,

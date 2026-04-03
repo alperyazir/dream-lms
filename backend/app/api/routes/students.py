@@ -650,7 +650,6 @@ async def get_students(
                 user_username=user.username,
                 user_full_name=user.full_name,
                 grade_level=student.grade_level,
-                parent_email=None,
                 created_at=student.created_at,
                 updated_at=student.updated_at,
             )
@@ -731,7 +730,6 @@ async def get_unassigned_students(
                 user_username=user.username,
                 user_full_name=user.full_name,
                 grade_level=student.grade_level,
-                parent_email=None,
                 created_at=student.created_at,
                 updated_at=student.updated_at,
             )
@@ -907,8 +905,6 @@ IMPORT_TEMPLATE_HEADERS = [
     "Full Name *",
     "Username",
     "Password",  # Story 28.1: Optional - use class_password or auto-generate if empty
-    "Email",
-    "Parent Email",
     "Grade",
     "Class",
 ]
@@ -941,8 +937,6 @@ def _create_import_template_workbook() -> Workbook:
         "Neşet Ertaş",  # Full Name
         "neset.ertas",  # Username (optional)
         "student123",  # Password (optional - leave empty to auto-generate)
-        "neset@email.com",  # Email
-        "parent@email.com",  # Parent Email
         "3",  # Grade
         "A",  # Class
     ]
@@ -950,7 +944,7 @@ def _create_import_template_workbook() -> Workbook:
         ws_students.cell(row=2, column=col, value=value)
 
     # Set column widths
-    column_widths = [20, 20, 15, 25, 25, 15, 15]
+    column_widths = [20, 20, 15, 15, 15]
     for col, width in enumerate(column_widths, start=1):
         ws_students.column_dimensions[get_column_letter(col)].width = width
 
@@ -972,11 +966,6 @@ def _create_import_template_workbook() -> Workbook:
         (
             "- Password (Optional):",
             "Student's password. Leave empty to auto-generate or use class password option.",
-        ),
-        ("- Email (Optional):", "Student's email address."),
-        (
-            "- Parent Email (Optional):",
-            "Parent/guardian email address for communications.",
         ),
         ("- Grade (Optional):", "Student's grade level (e.g., '3', '5', '10')."),
         (
@@ -1101,7 +1090,6 @@ async def validate_import_file(
     - File size (max 5MB)
     - Row count (max 500)
     - Required fields (Full Name)
-    - Email format if provided
     - Username uniqueness in file and database
 
     AC: 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
@@ -1177,8 +1165,6 @@ async def validate_import_file(
         # Required field validation
         if not full_name:
             errors.append("Full Name is required")
-
-        # Email format validation (removed - emails no longer used)
 
         # Generate or validate username
         if provided_username:
@@ -1443,8 +1429,6 @@ async def execute_import(
         ).strip()
         provided_username = str(row.get("Username", "") or "").strip()
         row_password = str(row.get("Password", "") or "").strip()  # Story 28.1
-        email = str(row.get("Email", "") or "").strip()
-        parent_email = str(row.get("Parent Email", "") or "").strip()
         grade = str(row.get("Grade", "") or "").strip()
         class_name = str(row.get("Class", "") or "").strip()
 
@@ -1474,9 +1458,6 @@ async def execute_import(
             else:
                 password = generate_student_password()
 
-            # Email is optional - pass None if not provided
-            user_email = email if email else None
-
             # Build grade_level from Grade and Class columns
             grade_level = None
             if grade and class_name:
@@ -1488,12 +1469,10 @@ async def execute_import(
             student_create = StudentCreate(
                 user_id=uuid.uuid4(),  # Placeholder
                 grade_level=grade_level,
-                parent_email=parent_email if parent_email else None,
             )
 
             user, student = crud.create_student(
                 session=session,
-                email=user_email,
                 username=username,
                 password=password,
                 full_name=full_name,
@@ -1587,7 +1566,7 @@ def download_credentials(
     header_alignment = Alignment(horizontal="center", vertical="center")
 
     # Headers
-    headers = ["Full Name", "Username", "Password", "Email"]
+    headers = ["Full Name", "Username", "Password"]
     for col, header in enumerate(headers, start=1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = header_font
@@ -1599,13 +1578,11 @@ def download_credentials(
         ws.cell(row=row_num, column=1, value=cred.full_name)
         ws.cell(row=row_num, column=2, value=cred.username)
         ws.cell(row=row_num, column=3, value=cred.password)
-        ws.cell(row=row_num, column=4, value=cred.email or "")
 
     # Column widths
     ws.column_dimensions["A"].width = 25
     ws.column_dimensions["B"].width = 20
     ws.column_dimensions["C"].width = 15
-    ws.column_dimensions["D"].width = 30
 
     # Add warning row at top
     ws.insert_rows(1)
@@ -1615,7 +1592,7 @@ def download_credentials(
         value="WARNING: Store this file securely! Passwords cannot be retrieved later.",
     )
     warning_cell.font = Font(bold=True, color="FF0000")
-    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=4)
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=3)
 
     # Save to buffer
     buffer = io.BytesIO()

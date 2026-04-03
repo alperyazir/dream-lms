@@ -2016,7 +2016,7 @@ async def save_content_to_library(
                             "language": content_data.get("language", "en"),
                             "created_by": str(current_user.id),
                             "created_by_name": current_user.full_name
-                            or current_user.email,
+                            or current_user.username,
                             "created_at": datetime.now(timezone.utc).isoformat(),
                         },
                         "content": content_data,

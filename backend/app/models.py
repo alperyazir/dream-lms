@@ -297,7 +297,6 @@ class TeacherUpdate(SQLModel):
 
     school_id: uuid.UUID | None = Field(default=None)
     subject_specialization: str | None = Field(default=None, max_length=255)
-    user_email: str | None = Field(default=None, max_length=255)
     user_username: str | None = Field(default=None, min_length=3, max_length=50)
     user_full_name: str | None = Field(default=None, max_length=255)
 

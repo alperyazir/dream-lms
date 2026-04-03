@@ -732,7 +732,7 @@ async def generate_student_report_data(
 
     # Build report data
     data = StudentReportData(
-        student_name=user.full_name or user.email,
+        student_name=user.full_name or user.username or "Unknown",
         student_id=str(student.id),
         class_name=class_obj.name if class_obj else "No Class",
         grade_level=student.grade_level,
@@ -893,7 +893,7 @@ async def generate_class_report_data(
     score_distribution = _calculate_score_distribution(student_avg_scores)
 
     # Get student names
-    student_names = {s.id: u.full_name or u.email for s, u in students}
+    student_names = {s.id: u.full_name or u.username or "Unknown" for s, u in students}
 
     top_students = [
         {
@@ -942,7 +942,7 @@ async def generate_class_report_data(
     data = ClassReportData(
         class_name=class_obj.name,
         class_id=str(class_obj.id),
-        teacher_name=teacher_user.full_name or teacher_user.email,
+        teacher_name=teacher_user.full_name or teacher_user.username or "Unknown",
         student_count=len(students),
         period_start=current_start.date().isoformat(),
         period_end=current_end.date().isoformat(),
@@ -1118,7 +1118,7 @@ async def generate_assignment_report_data(
     ]
 
     data = AssignmentReportData(
-        teacher_name=teacher_user.full_name or teacher_user.email,
+        teacher_name=teacher_user.full_name or teacher_user.username or "Unknown",
         period_start=current_start.date().isoformat(),
         period_end=current_end.date().isoformat(),
         total_assignments=len(assignments),

@@ -322,7 +322,7 @@ async def get_class_detail(
         enrolled_students.append(
             StudentInClass(
                 id=student.id,
-                email=user.email,
+                email=None,
                 full_name=user.full_name,
                 grade=student.grade_level,
             )

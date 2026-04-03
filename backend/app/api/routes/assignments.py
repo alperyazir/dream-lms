@@ -4033,7 +4033,7 @@ async def get_multi_activity_analytics(
                 expanded_students.append(
                     StudentActivityScore(
                         student_id=student.id,
-                        student_name=user.full_name or user.email,
+                        student_name=user.full_name or user.username or "Unknown",
                         status=astu.status.value,
                         score=astu.score,
                         max_score=100.0,  # Default max score for AI activities
@@ -4181,7 +4181,7 @@ async def get_multi_activity_analytics(
             expanded_students.append(
                 StudentActivityScore(
                     student_id=student.id,
-                    student_name=user.full_name or user.email,
+                    student_name=user.full_name or user.username or "Unknown",
                     status=ap.status.value,
                     score=ap.score,
                     max_score=ap.max_score,
@@ -5710,7 +5710,7 @@ async def get_pending_reviews(
                     else "unknown"
                 ),
                 student_id=str(student.id),
-                student_name=user.full_name or user.email,
+                student_name=user.full_name or user.username or "Unknown",
                 completed_at=asgn_student.completed_at,
             )
         )

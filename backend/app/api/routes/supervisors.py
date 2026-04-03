@@ -66,7 +66,7 @@ def list_supervisors(
 
     - **skip**: Number of records to skip (default: 0)
     - **limit**: Maximum number of records to return (default: 100)
-    - **search**: Optional search string to filter by name or email
+    - **search**: Optional search string to filter by name or username
     """
     query = select(User).where(User.role == UserRole.supervisor)
 
@@ -86,7 +86,6 @@ def list_supervisors(
         SupervisorPublic(
             id=s.id,
             full_name=s.full_name,
-            # email removed
             username=s.username,
             is_active=s.is_active,
             created_at=None,  # User model doesn't have created_at
@@ -130,7 +129,6 @@ def list_supervisors_paginated(
         SupervisorPublic(
             id=s.id,
             full_name=s.full_name,
-            # email removed
             username=s.username,
             is_active=s.is_active,
             created_at=None,

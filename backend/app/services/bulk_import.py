@@ -4,8 +4,6 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from pydantic import EmailStr
-from pydantic_core import PydanticCustomError
 from sqlmodel import Session, select
 
 from app.models import User, UserRole
@@ -29,46 +27,31 @@ class BulkValidationResult:
     errors: list[ValidationResult]
 
 
-def validate_email_format(email: str) -> bool:
+def check_existing_usernames(usernames: list[str], session: Session) -> set[str]:
     """
-    Validate email format using Pydantic EmailStr.
+    Check which usernames already exist in the database.
 
     Args:
-        email: Email address to validate
-
-    Returns:
-        True if email is valid, False otherwise
-    """
-    try:
-        EmailStr._validate(email)
-        return True
-    except (PydanticCustomError, AttributeError, Exception):
-        return False
-
-
-def check_existing_users(emails: list[str], session: Session) -> set[str]:
-    """
-    Check which emails already exist in the database.
-
-    Args:
-        emails: List of email addresses to check
+        usernames: List of usernames to check
         session: Database session
 
     Returns:
-        Set of emails that already exist in database
+        Set of usernames that already exist in database
     """
     result = session.exec(
-        select(User.email).where(User.email.in_([e.lower() for e in emails]))
+        select(User.username).where(
+            User.username.in_([u.lower() for u in usernames if u])
+        )
     )
-    return {email.lower() for email in result.all()}
+    return {username.lower() for username in result.all() if username}
 
 
 def validate_user_row(
     row: dict[str, Any],
     row_number: int,
     role: UserRole,
-    existing_emails: set[str],
-    seen_emails: set[str],
+    existing_usernames: set[str],
+    seen_usernames: set[str],
     session: Session,
 ) -> ValidationResult:
     """
@@ -78,8 +61,8 @@ def validate_user_row(
         row: Row data dictionary
         row_number: Row number for error reporting
         role: User role (student, teacher, publisher)
-        existing_emails: Set of emails already in database
-        seen_emails: Set of emails already seen in this import (for duplicate detection)
+        existing_usernames: Set of usernames already in database
+        seen_usernames: Set of usernames already seen in this import
         session: Database session for additional validation
 
     Returns:
@@ -90,39 +73,16 @@ def validate_user_row(
     # Check required fields
     first_name = row.get("First Name", "").strip() if row.get("First Name") else ""
     last_name = row.get("Last Name", "").strip() if row.get("Last Name") else ""
-    email = row.get("Email", "").strip() if row.get("Email") else ""
 
     if not first_name:
         errors.append("Missing required field: First Name")
     if not last_name:
         errors.append("Missing required field: Last Name")
-    if not email:
-        errors.append("Missing required field: Email")
-    else:
-        # Validate email format
-        if not validate_email_format(email):
-            errors.append(f"Invalid email format: {email}")
-        else:
-            email_lower = email.lower()
-
-            # Check for duplicates within file
-            if email_lower in seen_emails:
-                errors.append(f"Duplicate email in file: {email}")
-            else:
-                seen_emails.add(email_lower)
-
-            # Check for existing users in database
-            if email_lower in existing_emails:
-                errors.append(f"Email already exists in database: {email}")
 
     # Role-specific validation
     if role == UserRole.student:
         # Grade level is optional for students
-        parent_email = (
-            row.get("Parent Email", "").strip() if row.get("Parent Email") else None
-        )
-        if parent_email and not validate_email_format(parent_email):
-            errors.append(f"Invalid parent email format: {parent_email}")
+        pass
 
     elif role == UserRole.teacher:
         # School ID is required for teachers
@@ -151,8 +111,6 @@ def validate_user_row(
         )
         if not contact_email:
             errors.append("Missing required field: Contact Email")
-        elif not validate_email_format(contact_email):
-            errors.append(f"Invalid contact email format: {contact_email}")
 
     return ValidationResult(
         is_valid=len(errors) == 0, errors=errors, row_number=row_number
@@ -173,12 +131,9 @@ def validate_bulk_import(
     Returns:
         BulkValidationResult with validation summary and detailed errors
     """
-    # Get all emails from file for batch database check
-    emails = [row.get("Email", "").strip().lower() for row in rows if row.get("Email")]
-    existing_emails = check_existing_users(emails, session)
-
-    # Track emails seen in this file for duplicate detection
-    seen_emails: set[str] = set()
+    # Track usernames seen in this file for duplicate detection
+    seen_usernames: set[str] = set()
+    existing_usernames: set[str] = set()
 
     # Validate each row
     validation_errors: list[ValidationResult] = []
@@ -190,8 +145,8 @@ def validate_bulk_import(
             row=row,
             row_number=row_number,
             role=role,
-            existing_emails=existing_emails,
-            seen_emails=seen_emails,
+            existing_usernames=existing_usernames,
+            seen_usernames=seen_usernames,
             session=session,
         )
 

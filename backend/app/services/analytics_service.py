@@ -351,7 +351,7 @@ async def get_student_analytics(
     return StudentAnalyticsResponse(
         student=StudentInfo(
             id=str(student.id),
-            name=user.full_name or user.email,
+            name=user.full_name or user.username or "Unknown",
             photo_url=None,
         ),
         summary=summary,
@@ -563,7 +563,10 @@ async def get_class_analytics(
     for asgn_student, _, _, student, user in completed_submissions:
         if asgn_student.score is not None:
             if student.id not in student_data:
-                student_data[student.id] = (user.full_name or user.email, [])
+                student_data[student.id] = (
+                    user.full_name or user.username or "Unknown",
+                    [],
+                )
             student_data[student.id][1].append(asgn_student.score)
 
     ranked_students = [
@@ -871,7 +874,7 @@ async def get_assignment_detailed_results(
     student_results = [
         StudentResultItem(
             student_id=str(student.id),
-            name=user.full_name or user.email,
+            name=user.full_name or user.username or "Unknown",
             status=asgn_student.status.value,
             score=asgn_student.score,
             time_spent_minutes=asgn_student.time_spent_minutes or 0,
@@ -1029,7 +1032,7 @@ async def get_student_assignment_answers(
 
     return StudentAnswersResponse(
         student_id=str(student.id),
-        name=user.full_name or user.email,
+        name=user.full_name or user.username or "Unknown",
         status=asgn_student.status.value,
         score=asgn_student.score,
         time_spent_minutes=asgn_student.time_spent_minutes or 0,
@@ -1820,7 +1823,7 @@ async def _detect_struggling_students(
 
         # Get student name
         student_query = (
-            select(User.full_name, User.email)
+            select(User.full_name, User.username)
             .join(Student, Student.user_id == User.id)
             .where(Student.id == student_id)
         )
@@ -2149,7 +2152,7 @@ async def _get_assignment_insight_details(
         affected_students.append(
             AffectedStudent(
                 student_id=str(student.id),
-                name=user.full_name or user.email,
+                name=user.full_name or user.username or "Unknown",
                 relevant_metric=f"Score: {asgn_student.score:.0f}%",
             )
         )
@@ -2247,7 +2250,7 @@ async def _get_misconception_insight_details(
             affected_students.append(
                 AffectedStudent(
                     student_id=str(student.id),
-                    name=user.full_name or user.email,
+                    name=user.full_name or user.username or "Unknown",
                     relevant_metric=f"Answered: {answer}",
                 )
             )
@@ -2315,7 +2318,7 @@ async def _get_student_insight_details(
     affected_students.append(
         AffectedStudent(
             student_id=str(student_id),
-            name=user.full_name or user.email,
+            name=user.full_name or user.username or "Unknown",
             relevant_metric=(
                 f"Avg Score: {stats[0]:.1f}%" if stats[0] else "No completed work"
             ),
@@ -2403,7 +2406,7 @@ async def _get_activity_type_insight_details(
         select(
             Student.id,
             User.full_name,
-            User.email,
+            User.username,
             func.avg(AssignmentStudent.score).label("avg_score"),
         )
         .join(AssignmentStudent, Student.id == AssignmentStudent.student_id)
@@ -2415,7 +2418,7 @@ async def _get_activity_type_insight_details(
             Activity.activity_type == activity_type,
             AssignmentStudent.status == AssignmentStatus.completed,
         )
-        .group_by(Student.id, User.full_name, User.email)
+        .group_by(Student.id, User.full_name, User.username)
         .having(func.avg(AssignmentStudent.score) < 60)
         .limit(10)
     )
@@ -2508,7 +2511,7 @@ async def _get_time_management_insight_details(
         affected_students.append(
             AffectedStudent(
                 student_id=str(student.id),
-                name=user.full_name or user.email,
+                name=user.full_name or user.username or "Unknown",
                 relevant_metric=f"{asgn_student.time_spent_minutes:.0f} min, {asgn_student.score:.0f}%",
             )
         )
