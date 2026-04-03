@@ -29,9 +29,16 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
     if existing_user_username:
         raise HTTPException(status_code=400, detail="Username already taken")
 
-    db_obj = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
-    )
+    update_data: dict[str, Any] = {
+        "hashed_password": get_password_hash(user_create.password),
+    }
+    try:
+        update_data["viewable_password_encrypted"] = encrypt_viewable_password(
+            user_create.password
+        )
+    except ValueError:
+        pass
+    db_obj = User.model_validate(user_create, update=update_data)
     session.add(db_obj)
     session.commit()
     session.refresh(db_obj)
