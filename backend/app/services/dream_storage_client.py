@@ -681,7 +681,15 @@ class DreamCentralStorageClient:
         # Make request - use /object endpoint with path parameter
         url = f"/storage/books/{publisher_id}/{book_name}/object?path=config.json"
         response = await self._make_request("GET", url)
-        config_data = response.json()
+        # Storage returns application/octet-stream; try to parse as JSON
+        raw = response.content
+        if raw[:1] != b"{" and raw[:1] != b"[":
+            raise ValueError(
+                f"Expected JSON but got binary data (first byte: 0x{raw[0]:02x})"
+            )
+        import json as _json
+
+        config_data = _json.loads(raw)
 
         # Cache for 30 minutes
         self._set_cached(cache_key, config_data, ttl_seconds=30 * 60)
