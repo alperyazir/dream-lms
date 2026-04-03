@@ -85,7 +85,11 @@ from app.services.pdf_processing_service import (
     PDFProcessingService,
     get_pdf_processing_service,
 )
-from app.services.redis_cache import cache_get_sync, cache_set_sync
+from app.services.redis_cache import (
+    cache_get_sync,
+    cache_invalidate_pattern_sync,
+    cache_set_sync,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +105,11 @@ _media_oauth2_scheme = OAuth2PasswordBearer(
 # =============================================================================
 # Helper: Get Teacher ID from Current User
 # =============================================================================
+
+
+def _invalidate_materials_cache(teacher_id: uuid.UUID) -> None:
+    """Clear cached materials list for a teacher."""
+    cache_invalidate_pattern_sync(f"teacher:{teacher_id}:materials:*")
 
 
 def get_teacher_id(session: SessionDep, current_user: CurrentUser) -> uuid.UUID:
@@ -263,6 +272,7 @@ async def upload_material(
 
     session.commit()
     session.refresh(material)
+    _invalidate_materials_cache(teacher_id)
 
     return UploadResponse(
         material=material_to_response(material),
@@ -305,6 +315,7 @@ async def create_text_note(
     session.add(material)
     session.commit()
     session.refresh(material)
+    _invalidate_materials_cache(teacher_id)
 
     return material_to_response(material)
 
@@ -344,6 +355,7 @@ async def update_text_note(
     session.add(material)
     session.commit()
     session.refresh(material)
+    _invalidate_materials_cache(teacher_id)
 
     return material_to_response(material)
 
@@ -381,6 +393,7 @@ async def create_url_link(
     session.add(material)
     session.commit()
     session.refresh(material)
+    _invalidate_materials_cache(teacher_id)
 
     return material_to_response(material)
 
@@ -575,6 +588,7 @@ async def update_material(
     session.add(material)
     session.commit()
     session.refresh(material)
+    _invalidate_materials_cache(teacher_id)
 
     return material_to_response(material)
 
@@ -625,6 +639,7 @@ async def delete_material(
     # Delete record
     session.delete(material)
     session.commit()
+    _invalidate_materials_cache(teacher_id)
 
 
 # =============================================================================
@@ -944,6 +959,7 @@ async def upload_pdf_for_ai(
 
     session.commit()
     session.refresh(material)
+    _invalidate_materials_cache(teacher_id)
 
     return TeacherMaterialUploadResponse(
         material=TeacherMaterialResponse.from_material(material),
@@ -991,6 +1007,7 @@ async def create_text_material_for_ai(
     session.add(material)
     session.commit()
     session.refresh(material)
+    _invalidate_materials_cache(teacher_id)
 
     return TeacherMaterialUploadResponse(
         material=TeacherMaterialResponse.from_material(material),
