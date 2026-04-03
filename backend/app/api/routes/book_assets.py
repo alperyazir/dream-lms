@@ -9,6 +9,7 @@ import mimetypes
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
+from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.api.deps import get_current_user, get_db
@@ -187,11 +188,60 @@ async def _check_book_access(
     )
 
 
+class AssetPresignedResponse(BaseModel):
+    url: str
+    expires_in_seconds: int
+    content_type: str | None = None
+
+
+@router.get(
+    "/{book_id}/assets/presigned",
+    response_model=AssetPresignedResponse,
+    summary="Get presigned URL for a book asset",
+)
+async def get_book_asset_presigned_url(
+    book_id: Annotated[int, Path(description="Book ID")],
+    path: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AssetPresignedResponse:
+    """
+    Get a presigned R2 URL for direct browser access to a book asset.
+
+    Browser loads the asset directly from storage without proxying
+    through LMS or FCS backends.
+    """
+    _validate_asset_path(path)
+    book = await _check_book_access(book_id, current_user, db)
+
+    client = await get_dream_storage_client()
+    try:
+        result = await client.get_book_asset_presigned_url(
+            publisher_id=book.publisher_id,
+            book_name=book.name,
+            asset_path=path,
+        )
+        return AssetPresignedResponse(
+            url=result["url"],
+            expires_in_seconds=result["expires_in_seconds"],
+            content_type=_get_content_type_from_path(path),
+        )
+    except DreamStorageNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Asset not found"
+        )
+    except DreamStorageError as e:
+        logger.error(f"Failed to get presigned URL: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to get asset URL",
+        )
+
+
 @router.get(
     "/{book_id}/assets/{asset_path:path}",
     response_class=Response,
-    summary="Serve book asset",
-    description="Proxy authenticated access to book assets from Dream Central Storage",
+    summary="Serve book asset (proxy fallback)",
 )
 async def serve_book_asset(
     book_id: Annotated[int, Path(description="Book ID")],
@@ -204,30 +254,11 @@ async def serve_book_asset(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> Response:
-    """
-    Serve book assets from Dream Central Storage with authentication.
-
-    Validates user access through publisher permissions before proxying
-    the request to Dream Central Storage.
-
-    **Common Asset Paths:**
-    - Page images: `images/{module}/{page_number}.png`
-    - Activity images: `images/{module}/p{page}m{index}.jpg`
-    - Audio files: `audio/{page}{letter}.mp3`
-
-    **Response Headers:**
-    - `Content-Type`: Detected from file extension
-    - `Cache-Control`: max-age=86400 (24 hours)
-    """
-    # Validate asset path for security
+    """Proxy fallback for book assets. Prefer /assets/presigned endpoint."""
     _validate_asset_path(asset_path)
-
-    # Check book access
     book = await _check_book_access(book_id, current_user, db)
 
-    # Fetch asset from Dream Central Storage
     client = await get_dream_storage_client()
-
     try:
         asset_data = await client.download_asset(
             publisher_id=book.publisher_id,
@@ -235,36 +266,21 @@ async def serve_book_asset(
             asset_path=asset_path,
         )
     except DreamStorageNotFoundError:
-        logger.warning(
-            f"Asset not found: book_id={book_id}, asset_path={asset_path}, user_id={current_user.id}"
-        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Asset not found"
         )
     except DreamStorageError as e:
-        logger.error(
-            f"Dream Central Storage error: book_id={book_id}, asset_path={asset_path}, error={e}"
-        )
+        logger.error(f"DCS error: book_id={book_id}, path={asset_path}, error={e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch asset from storage",
         )
 
-    # Log successful access for auditing
-    logger.info(
-        f"Asset served: book_id={book_id}, asset_path={asset_path}, user_id={current_user.id}"
-    )
-
-    # Determine Content-Type
     content_type = _get_content_type_from_path(asset_path)
-
-    # Return response with caching headers
     return Response(
         content=asset_data,
         media_type=content_type,
-        headers={
-            "Cache-Control": "max-age=86400",  # 24 hours
-        },
+        headers={"Cache-Control": "max-age=86400"},
     )
 
 

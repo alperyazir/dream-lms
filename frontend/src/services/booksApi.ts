@@ -22,6 +22,55 @@ import { createApiClient } from "./apiClient";
 
 const apiClient = createApiClient();
 
+// --- Presigned URL cache to avoid duplicate requests ---
+const presignedCache = new Map<string, { url: string; expiresAt: number }>();
+
+/**
+ * Get a presigned R2 URL for a book asset (image, audio, video).
+ * Caches URLs for 50 minutes (presigned URLs expire in 1 hour).
+ */
+async function getPresignedAssetUrl(
+  bookId: string | number,
+  assetPath: string,
+): Promise<string> {
+  const cacheKey = `${bookId}:${assetPath}`;
+  const cached = presignedCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.url;
+  }
+
+  const response = await apiClient.get<{
+    url: string;
+    expires_in_seconds: number;
+    content_type: string | null;
+  }>(`/api/v1/books/${bookId}/assets/presigned`, {
+    params: { path: assetPath },
+  });
+
+  const { url, expires_in_seconds } = response.data;
+  // Cache for 50 min (leave 10 min buffer before expiry)
+  presignedCache.set(cacheKey, {
+    url,
+    expiresAt: Date.now() + Math.max((expires_in_seconds - 600) * 1000, 60000),
+  });
+
+  return url;
+}
+
+/**
+ * Extract clean asset path from config.json paths like "./books/BRAINS/images/M3/p30s1.png"
+ */
+function cleanAssetPath(rawPath: string): string {
+  let path = rawPath;
+  const booksPrefix = /^\.\/books\/[^/]+\//;
+  if (booksPrefix.test(path)) {
+    path = path.replace(booksPrefix, "");
+  }
+  if (path.startsWith("./")) path = path.substring(2);
+  if (path.startsWith("/")) path = path.substring(1);
+  return path;
+}
+
 /**
  * Get paginated list of books accessible to the current teacher
  *
@@ -122,38 +171,13 @@ export async function getActivityImageUrl(
   bookId: string,
   sectionPath: string | null,
 ): Promise<string | null> {
-  if (!sectionPath || !bookId) {
-    return null;
-  }
+  if (!sectionPath || !bookId) return null;
 
   try {
-    // Extract asset path from section_path
-    // Convert "./books/BOOKNAME/images/M3/p30s1.png" to "images/M3/p30s1.png"
-    let assetPath = sectionPath;
-    const booksPrefix = /^\.\/books\/[^/]+\//;
-    if (booksPrefix.test(sectionPath)) {
-      assetPath = sectionPath.replace(booksPrefix, "");
-    }
-
-    // Remove leading slash if present
-    if (assetPath.startsWith("/")) {
-      assetPath = assetPath.substring(1);
-    }
-
-    // Construct backend proxy URL
-    const url = `/api/v1/books/${bookId}/assets/${assetPath}`;
-
-    // Fetch image with authentication
-    const response = await apiClient.get(url, {
-      responseType: "blob",
-    });
-
-    // Create blob URL
-    const blobUrl = URL.createObjectURL(response.data);
-
-    return blobUrl;
+    const assetPath = cleanAssetPath(sectionPath);
+    return await getPresignedAssetUrl(bookId, assetPath);
   } catch (error) {
-    console.error("Failed to fetch activity image:", error, {
+    console.error("Failed to get activity image URL:", error, {
       bookId,
       sectionPath,
     });
@@ -179,43 +203,13 @@ export async function getActivityAudioUrl(
   bookId: string,
   audioPath: string | null,
 ): Promise<string | null> {
-  if (!audioPath || !bookId) {
-    return null;
-  }
+  if (!audioPath || !bookId) return null;
 
   try {
-    // Extract asset path from audio_path
-    // Convert "./books/BOOKNAME/audio/08.mp3" to "audio/08.mp3"
-    let assetPath = audioPath;
-    const booksPrefix = /^\.\/books\/[^/]+\//;
-    if (booksPrefix.test(audioPath)) {
-      assetPath = audioPath.replace(booksPrefix, "");
-    }
-
-    // Remove leading "./" if still present
-    if (assetPath.startsWith("./")) {
-      assetPath = assetPath.substring(2);
-    }
-
-    // Remove leading slash if present
-    if (assetPath.startsWith("/")) {
-      assetPath = assetPath.substring(1);
-    }
-
-    // Use the media streaming endpoint for audio
-    const url = `/api/v1/books/${bookId}/media/${assetPath}`;
-
-    // Fetch audio with authentication
-    const response = await apiClient.get(url, {
-      responseType: "blob",
-    });
-
-    // Create blob URL
-    const blobUrl = URL.createObjectURL(response.data);
-
-    return blobUrl;
+    const assetPath = cleanAssetPath(audioPath);
+    return await getPresignedAssetUrl(bookId, assetPath);
   } catch (error) {
-    console.error("Failed to fetch activity audio:", error, {
+    console.error("Failed to get activity audio URL:", error, {
       bookId,
       audioPath,
     });
@@ -279,10 +273,18 @@ function getAuthToken(): string | null {
  * @param videoPath - Video path from VideoInfo (e.g., "video/1.mp4")
  * @returns The URL to stream video with auth token
  */
-export function getVideoStreamUrl(bookId: string, videoPath: string): string {
-  const token = getAuthToken();
-  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
-  return `${OpenAPI.BASE}/api/v1/books/${bookId}/media/${videoPath}${tokenParam}`;
+export async function getVideoStreamUrl(
+  bookId: string,
+  videoPath: string,
+): Promise<string> {
+  try {
+    return await getPresignedAssetUrl(bookId, videoPath);
+  } catch {
+    // Fallback to proxy with token auth
+    const token = getAuthToken();
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+    return `${OpenAPI.BASE}/api/v1/books/${bookId}/media/${videoPath}${tokenParam}`;
+  }
 }
 
 /**
@@ -362,14 +364,15 @@ export async function getPageThumbnailUrl(
   if (!thumbnailUrl) return null;
 
   try {
-    // Fetch image with authentication
-    const response = await apiClient.get(thumbnailUrl, {
-      responseType: "blob",
-    });
-
-    // Create blob URL
-    const blobUrl = URL.createObjectURL(response.data);
-    return blobUrl;
+    // thumbnailUrl is like "/api/v1/books/{id}/assets/images/M1/p7.png"
+    // Extract bookId and path
+    const match = thumbnailUrl.match(/\/api\/v1\/books\/(\d+)\/assets\/(.+)/);
+    if (match) {
+      return await getPresignedAssetUrl(match[1], match[2]);
+    }
+    // Fallback to proxy
+    const response = await apiClient.get(thumbnailUrl, { responseType: "blob" });
+    return URL.createObjectURL(response.data);
   } catch (error) {
     console.error("Failed to fetch page thumbnail:", error);
     return null;
@@ -408,12 +411,14 @@ export async function getPageImageUrl(
   if (!imageUrl) return null;
 
   try {
-    const response = await apiClient.get(imageUrl, {
-      responseType: "blob",
-    });
-
-    const blobUrl = URL.createObjectURL(response.data);
-    return blobUrl;
+    // imageUrl is like "/api/v1/books/{id}/assets/images/M1/7.png"
+    const match = imageUrl.match(/\/api\/v1\/books\/(\d+)\/assets\/(.+)/);
+    if (match) {
+      return await getPresignedAssetUrl(match[1], match[2]);
+    }
+    // Fallback to proxy
+    const response = await apiClient.get(imageUrl, { responseType: "blob" });
+    return URL.createObjectURL(response.data);
   } catch (error) {
     console.error("Failed to fetch page image:", error);
     return null;
@@ -434,12 +439,18 @@ export async function getMediaUrl(mediaUrl: string): Promise<string | null> {
   if (!mediaUrl) return null;
 
   try {
-    const response = await apiClient.get(mediaUrl, {
-      responseType: "blob",
-    });
-
-    const blobUrl = URL.createObjectURL(response.data);
-    return blobUrl;
+    // mediaUrl is like "/api/v1/books/{id}/assets/..." or "/api/v1/books/{id}/media/..."
+    const assetsMatch = mediaUrl.match(/\/api\/v1\/books\/(\d+)\/assets\/(.+)/);
+    if (assetsMatch) {
+      return await getPresignedAssetUrl(assetsMatch[1], assetsMatch[2]);
+    }
+    const mediaMatch = mediaUrl.match(/\/api\/v1\/books\/(\d+)\/media\/(.+)/);
+    if (mediaMatch) {
+      return await getPresignedAssetUrl(mediaMatch[1], mediaMatch[2]);
+    }
+    // Fallback to proxy
+    const response = await apiClient.get(mediaUrl, { responseType: "blob" });
+    return URL.createObjectURL(response.data);
   } catch (error) {
     console.error("Failed to fetch media:", error);
     return null;

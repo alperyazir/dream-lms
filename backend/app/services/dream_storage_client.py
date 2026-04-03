@@ -653,6 +653,39 @@ class DreamCentralStorageClient:
         )
         return response.json()
 
+    async def get_book_asset_presigned_url(
+        self,
+        publisher_id: int,
+        book_name: str,
+        asset_path: str,
+        expires_seconds: int = 3600,
+    ) -> dict:
+        """Get a presigned URL for direct browser access to a book asset."""
+        auth_headers = await self._get_auth_headers()
+        encoded_path = url_quote(asset_path, safe="/")
+
+        url = (
+            f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books"
+            f"/{publisher_id}/{book_name}/presigned"
+            f"?path={encoded_path}&expires={expires_seconds}"
+        )
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, headers=auth_headers)
+
+            if response.status_code == 404:
+                raise DreamStorageNotFoundError(f"Asset not found: {asset_path}")
+            if response.status_code != 200:
+                raise DreamStorageError(
+                    f"Failed to get presigned URL: {response.status_code}"
+                )
+
+            data = response.json()
+            return {
+                "url": data["url"],
+                "expires_in_seconds": data.get("expires_in", expires_seconds),
+            }
+
     async def get_book_config(
         self, publisher_id: int, book_name: str
     ) -> dict[str, Any]:
