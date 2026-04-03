@@ -480,7 +480,6 @@ def create_my_teacher(
     )
     user, teacher = create_teacher(
         session=session,
-        email=None,
         username=teacher_in.username,
         password=password,
         full_name=teacher_in.full_name,

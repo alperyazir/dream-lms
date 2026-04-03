@@ -119,7 +119,6 @@ def create_student(
     # Create user and student atomically
     user, student = crud.create_student(
         session=session,
-        email=None,
         username=student_in.username,
         password=temp_password,
         full_name=student_in.full_name,
@@ -282,7 +281,6 @@ async def bulk_import_students(
             # Create user and student atomically
             user, student = crud.create_student(
                 session=session,
-                email=None,
                 username=username,
                 password=temp_password,
                 full_name=full_name,

@@ -536,7 +536,6 @@ def create_teacher(
     # Create user and teacher atomically
     user, teacher = crud.create_teacher(
         session=session,
-        email=None,
         username=teacher_in.username,
         password=temp_password,
         full_name=teacher_in.full_name,
@@ -941,13 +940,11 @@ def create_student(
     student_create = StudentCreate(
         user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
         grade_level=student_in.grade_level,
-        parent_email=student_in.parent_email,
     )
 
     # Create user and student atomically
     user, student = crud.create_student(
         session=session,
-        email=None,
         username=student_in.username,
         password=password,
         full_name=student_in.full_name,
@@ -957,10 +954,10 @@ def create_student(
     # Build student response with user information
     student_data = StudentPublic(
         grade_level=student.grade_level,
-        parent_email=student.parent_email,
+        parent_email=student.parent_email,  # Legacy DB field
         id=student.id,
         user_id=student.user_id,
-        user_email=user.email,
+        user_email=None,
         user_username=user.username,
         user_full_name=user.full_name or "",
         created_at=student.created_at,
@@ -1196,7 +1193,6 @@ def list_students(
             (func.lower(User.full_name).contains(search_filter))
             | (func.lower(User.username).contains(search_filter))
             | (func.lower(Student.grade_level).contains(search_filter))
-            | (func.lower(Student.parent_email).contains(search_filter))
         )
 
     # Get total count
@@ -1622,7 +1618,6 @@ async def bulk_import_publishers(
             # Create user and publisher atomically
             user, publisher = crud.create_publisher(
                 session=session,
-                email=None,
                 username=username,
                 password=temp_password,
                 full_name=full_name,
@@ -1796,7 +1791,6 @@ async def bulk_import_teachers(
             # Create user and teacher atomically
             user, teacher = crud.create_teacher(
                 session=session,
-                email=None,
                 username=username,
                 password=temp_password,
                 full_name=full_name,
@@ -1953,7 +1947,6 @@ async def bulk_import_students(
             # Create user and student atomically
             user, student = crud.create_student(
                 session=session,
-                email=None,
                 username=username,
                 password=temp_password,
                 full_name=full_name,
@@ -2551,7 +2544,6 @@ async def create_publisher_account(
     from app.models import UserCreate
 
     user_create = UserCreate(
-        email=None,
         username=username,
         password=temp_password,
         full_name=account_in.full_name,

@@ -917,7 +917,7 @@ function AdminTeachers() {
           {resetResult?.temporaryPassword ? (
             <div className="space-y-3 py-4">
               <p className="text-amber-600">
-                Email delivery is not available. Please share this password
+                Please share this password
                 securely:
               </p>
               <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
