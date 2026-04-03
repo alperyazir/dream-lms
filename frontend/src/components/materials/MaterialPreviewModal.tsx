@@ -18,10 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import {
-  getDownloadBlobUrl,
-  getMaterialBlobUrl,
-} from "@/services/materialsApi";
+import { getPresignedUrl } from "@/services/materialsApi";
 import type { Material } from "@/types/material";
 import { MaterialTypeIcon } from "./MaterialTypeIcon";
 
@@ -65,15 +62,13 @@ export function MaterialPreviewModal({
       return;
     }
 
-    const fetchBlobUrl = async () => {
+    const fetchUrl = async () => {
       setIsLoadingUrl(true);
       setUrlError(null);
       try {
-        // Use stream endpoint for audio/video, download for documents/images
-        const url = ["audio", "video"].includes(material.type)
-          ? await getMaterialBlobUrl(material.id)
-          : await getDownloadBlobUrl(material.id);
-        setBlobUrl(url);
+        // Use presigned URL for direct R2 access (no proxy)
+        const result = await getPresignedUrl(material.id);
+        setBlobUrl(result.url);
       } catch (err) {
         console.error("Failed to load file:", err);
         setUrlError("Failed to load file. Please try again.");
@@ -82,14 +77,7 @@ export function MaterialPreviewModal({
       }
     };
 
-    fetchBlobUrl();
-
-    // Cleanup: revoke blob URL when effect reruns or component unmounts
-    return () => {
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
-    };
+    fetchUrl();
   }, [open, material?.id, material?.type, blobUrl, material]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset zoom when modal closes
@@ -97,9 +85,6 @@ export function MaterialPreviewModal({
     (newOpen: boolean) => {
       if (!newOpen) {
         setImageZoom(1);
-        if (blobUrl) {
-          URL.revokeObjectURL(blobUrl);
-        }
         setBlobUrl(null);
         setUrlError(null);
       }
@@ -136,15 +121,12 @@ export function MaterialPreviewModal({
       <Button
         variant="outline"
         onClick={() => {
-          // Retry fetching blob URL
+          // Retry fetching presigned URL
           if (material) {
             setIsLoadingUrl(true);
             setUrlError(null);
-            const fetchFn = ["audio", "video"].includes(material.type)
-              ? getMaterialBlobUrl
-              : getDownloadBlobUrl;
-            fetchFn(material.id)
-              .then((url) => setBlobUrl(url))
+            getPresignedUrl(material.id)
+              .then((result) => setBlobUrl(result.url))
               .catch(() =>
                 setUrlError("Failed to load file. Please try again."),
               )

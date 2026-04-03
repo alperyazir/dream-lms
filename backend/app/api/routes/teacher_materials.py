@@ -529,21 +529,16 @@ async def get_presigned_url(
         )
 
     try:
-        # Verify file exists in DCS
         result = await dcs_client.get_teacher_material_presigned_url(
             teacher_id=str(teacher_id),
             storage_path=material.storage_path,
-            expires_minutes=min(expires_minutes, 1440),
+            expires_seconds=min(expires_minutes * 60, 86400),
         )
 
-        # Return URL to our own streaming endpoint (requires auth header)
-        stream_url = f"/api/v1/teachers/materials/{material_id}/stream"
-
         return PresignedUrlResponse(
-            url=stream_url,
-            expires_in_seconds=result.get("expires_in_seconds", expires_minutes * 60),
-            content_type=material.mime_type
-            or result.get("content_type", "application/octet-stream"),
+            url=result["url"],
+            expires_in_seconds=result["expires_in_seconds"],
+            content_type=material.mime_type or "application/octet-stream",
         )
     except DreamStorageNotFoundError:
         raise HTTPException(
@@ -551,10 +546,10 @@ async def get_presigned_url(
             detail="File not found in storage",
         )
     except DreamStorageError as e:
-        logger.error(f"Failed to verify file: {e}", exc_info=True)
+        logger.error(f"Failed to get presigned URL: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to verify file. Please try again.",
+            detail="Failed to get file URL. Please try again.",
         )
 
 

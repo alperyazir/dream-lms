@@ -1247,77 +1247,56 @@ class DreamCentralStorageClient:
         self,
         teacher_id: str,
         storage_path: str,
-        expires_minutes: int = 60,
+        expires_seconds: int = 3600,
     ) -> dict:
         """
-        Get URL info for browser access to a teacher material.
+        Get a presigned URL for direct browser access to a teacher material.
 
-        Note: The new DCS API no longer provides presigned URLs. This function
-        now verifies the file exists and returns metadata. The frontend should
-        use the authenticated streaming endpoint instead.
+        Uses FCS /teachers/{teacher_id}/materials/presigned endpoint which
+        generates a time-limited R2 URL.
 
         Args:
             teacher_id: Teacher UUID string
             storage_path: Storage path in format "{teacher_uuid}/materials/{filename}"
-            expires_minutes: URL expiry in minutes (for compatibility, not used)
+            expires_seconds: URL expiry in seconds (default 1 hour)
 
         Returns:
-            Dict with path, size, content_type
+            Dict with url, expires_in, content_type
 
         Raises:
             ValueError: If path format is invalid
             DreamStorageError: If request fails
         """
-        # Parse storage path: {teacher_uuid}/materials/{filename}
         parts = storage_path.split("/", 2)
         if len(parts) != 3:
             raise ValueError(f"Invalid storage path format: {storage_path}")
         _teacher_uuid, _materials, filename = parts
 
-        # Verify file exists with Range request (HEAD not supported by DCS)
         auth_headers = await self._get_auth_headers()
-
-        # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
 
-        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/materials/{encoded_filename}"
+        url = (
+            f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}"
+            f"/materials/presigned?path={encoded_filename}&expires={expires_seconds}"
+        )
 
         timeout = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
 
         async with httpx.AsyncClient(timeout=timeout) as client:
-            # Use Range request to get first byte - this verifies file exists and gets metadata
-            response = await client.get(
-                url,
-                headers={
-                    **auth_headers,
-                    "Range": "bytes=0-0",
-                },
-            )
+            response = await client.get(url, headers=auth_headers)
 
             if response.status_code == 404:
                 raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
 
-            if response.status_code not in (200, 206):
+            if response.status_code != 200:
                 raise DreamStorageError(
-                    f"Failed to verify material: {response.status_code}"
+                    f"Failed to get presigned URL: {response.status_code}"
                 )
 
-            # Parse size from Content-Range header (format: "bytes 0-0/total_size")
-            content_range = response.headers.get("content-range", "")
-            size = 0
-            if "/" in content_range:
-                try:
-                    size = int(content_range.split("/")[1])
-                except (IndexError, ValueError):
-                    pass
-
+            data = response.json()
             return {
-                "path": storage_path,
-                "size": size,
-                "content_type": response.headers.get(
-                    "content-type", "application/octet-stream"
-                ),
-                "expires_in_seconds": expires_minutes * 60,
+                "url": data["url"],
+                "expires_in_seconds": data.get("expires_in", expires_seconds),
             }
 
     async def get_teacher_material_size(
