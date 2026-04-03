@@ -287,6 +287,25 @@ export function PageViewer() {
     resetPan();
   }, [currentPageIndex, resetPan]);
 
+  // Prefetch next 2 pages for instant navigation
+  useEffect(() => {
+    if (!config) return;
+    const pagesToPrefetch = [currentPageIndex + 1, currentPageIndex + 2];
+    for (const idx of pagesToPrefetch) {
+      if (idx < config.pages.length) {
+        const pageImage = config.pages[idx].image;
+        if (pageImage) {
+          getPageImageUrl(pageImage).then((url) => {
+            if (url) {
+              const img = new Image();
+              img.src = url;
+            }
+          });
+        }
+      }
+    }
+  }, [currentPageIndex, config]);
+
   if (!config) {
     return (
       <div className="flex h-full w-full items-center justify-center">
