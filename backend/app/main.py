@@ -301,7 +301,7 @@ def get_version():
     return {"service": "flow-learn", "version": _read_version()}
 
 
-@app.get("/metrics", include_in_schema=False)
+@app.get("/metrics", include_in_schema=False, tags=["system"])
 def metrics():
     from starlette.responses import Response
 
