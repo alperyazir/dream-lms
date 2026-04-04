@@ -119,6 +119,12 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_REDIS_URL: str = "redis://localhost:6380/1"
     RATE_LIMIT_DEFAULT: str = "200/minute"
+    RATE_LIMIT_AUTH: str = "30/minute"
+    RATE_LIMIT_AI: str = "20/minute"
+    RATE_LIMIT_WRITE: str = "60/minute"
+    RATE_LIMIT_READ: str = "200/minute"
+    RATE_LIMIT_ADMIN: str = "300/minute"
+    RATE_LIMIT_UPLOAD: str = "10/minute"
 
     # AI Generation settings
     AI_MONTHLY_QUOTA: int = 100  # Monthly AI generation quota per teacher

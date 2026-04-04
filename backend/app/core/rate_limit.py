@@ -35,12 +35,12 @@ def get_user_id_or_ip(request: Request) -> str:
 
 
 class RateLimits:
-    AUTH = "10/minute"
-    AI = "20/minute"
-    WRITE = "60/minute"
-    READ = "200/minute"
-    ADMIN = "300/minute"
-    UPLOAD = "10/minute"
+    AUTH = settings.RATE_LIMIT_AUTH
+    AI = settings.RATE_LIMIT_AI
+    WRITE = settings.RATE_LIMIT_WRITE
+    READ = settings.RATE_LIMIT_READ
+    ADMIN = settings.RATE_LIMIT_ADMIN
+    UPLOAD = settings.RATE_LIMIT_UPLOAD
 
 
 limiter = Limiter(
