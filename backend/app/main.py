@@ -6,10 +6,16 @@ from contextlib import asynccontextmanager
 
 import sentry_sdk
 from fastapi import FastAPI
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 from fastapi.responses import ORJSONResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.cors import CORSMiddleware
@@ -100,10 +106,12 @@ REQUESTS_IN_PROGRESS = Gauge(
 def _normalize_path(path: str) -> str:
     """Collapse dynamic path segments to prevent high-cardinality labels."""
     import re
+
     # Replace UUIDs
     path = re.sub(
         r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-        ":id", path,
+        ":id",
+        path,
     )
     # Replace numeric IDs
     path = re.sub(r"/\d+(?=/|$)", "/:id", path)
@@ -146,7 +154,9 @@ class PrometheusMiddleware:
             duration = time.perf_counter() - start
             REQUESTS_IN_PROGRESS.dec()
             status_group = f"{status_code // 100}xx"
-            REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status_group).inc()
+            REQUEST_COUNT.labels(
+                method=method, endpoint=endpoint, status=status_group
+            ).inc()
             REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(duration)
 
 
@@ -294,6 +304,7 @@ def get_version():
 @app.get("/metrics", include_in_schema=False)
 def metrics():
     from starlette.responses import Response
+
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
