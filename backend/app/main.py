@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 import sentry_sdk
 from fastapi import FastAPI
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 from fastapi.responses import ORJSONResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -76,6 +77,77 @@ class BotBlockerMiddleware:
             await send({"type": "http.response.body", "body": b""})
             return
         await self.app(scope, receive, send)
+
+
+# ─── Prometheus Metrics ─────────────────────────────────────
+REQUEST_COUNT = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
+REQUEST_DURATION = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+    buckets=[0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+)
+REQUESTS_IN_PROGRESS = Gauge(
+    "http_requests_in_progress",
+    "Number of HTTP requests in progress",
+)
+
+
+def _normalize_path(path: str) -> str:
+    """Collapse dynamic path segments to prevent high-cardinality labels."""
+    import re
+    # Replace UUIDs
+    path = re.sub(
+        r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+        ":id", path,
+    )
+    # Replace numeric IDs
+    path = re.sub(r"/\d+(?=/|$)", "/:id", path)
+    return path
+
+
+class PrometheusMiddleware:
+    """Pure ASGI middleware — track request count, duration, and in-progress."""
+
+    SKIP_PATHS = {"/metrics", "/health", "/version"}
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        if path in self.SKIP_PATHS:
+            await self.app(scope, receive, send)
+            return
+
+        method = scope.get("method", "GET")
+        endpoint = _normalize_path(path)
+        status_code = 0
+
+        async def send_wrapper(message):
+            nonlocal status_code
+            if message["type"] == "http.response.start":
+                status_code = message["status"]
+            await send(message)
+
+        REQUESTS_IN_PROGRESS.inc()
+        start = time.perf_counter()
+        try:
+            await self.app(scope, receive, send_wrapper)
+        finally:
+            duration = time.perf_counter() - start
+            REQUESTS_IN_PROGRESS.dec()
+            status_group = f"{status_code // 100}xx"
+            REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status_group).inc()
+            REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(duration)
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -219,6 +291,12 @@ def get_version():
     return {"service": "flow-learn", "version": _read_version()}
 
 
+@app.get("/metrics", include_in_schema=False)
+def metrics():
+    from starlette.responses import Response
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 # Rate limit exception handler
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
@@ -272,6 +350,9 @@ if settings.RATE_LIMIT_ENABLED:
 
 # Block common bot/scanner paths to reduce log noise
 app.add_middleware(BotBlockerMiddleware)
+
+# Prometheus metrics — track request count, duration, in-progress
+app.add_middleware(PrometheusMiddleware)
 
 # Log slow requests (>500ms) — outermost to capture full request time
 app.add_middleware(RequestTimingMiddleware)

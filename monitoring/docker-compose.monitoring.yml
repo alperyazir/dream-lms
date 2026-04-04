@@ -1,0 +1,164 @@
+# Monitoring stack for Flow Learn
+# Usage: docker compose -f docker-compose.monitoring.yml up -d
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=5GB"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - monitoring
+      - flow-learn_default
+      - flow-central-storage_default
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+      - GF_SERVER_ROOT_URL=https://monitor.${DOMAIN:-dreamedtech.com}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      # Disable analytics
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      # Disable signup
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - monitoring
+      - traefik-public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+      - traefik.http.routers.grafana-https.rule=Host(`monitor.${DOMAIN:-dreamedtech.com}`)
+      - traefik.http.routers.grafana-https.entrypoints=https
+      - traefik.http.routers.grafana-https.tls=true
+      - traefik.http.routers.grafana-https.tls.certresolver=le
+
+  loki:
+    image: grafana/loki:3.1.0
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:3.1.0
+    restart: unless-stopped
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - monitoring
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - monitoring
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+networks:
+  monitoring:
+    driver: bridge
+  flow-learn_default:
+    external: true
+  flow-central-storage_default:
+    external: true
+  traefik-public:
+    external: true
