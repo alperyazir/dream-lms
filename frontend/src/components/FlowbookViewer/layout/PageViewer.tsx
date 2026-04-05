@@ -171,14 +171,29 @@ function PageImage({ page, pageIndex, viewMode }: PageImageProps) {
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-lg bg-slate-200 h-full",
+          "relative overflow-hidden rounded-lg bg-white shadow-lg h-full aspect-[3/4]",
           viewMode === "single" ? "w-[300px]" : "w-[250px]",
         )}
       >
-        <div className="flex flex-col items-center gap-2 text-slate-400">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="text-sm">Loading page {pageIndex + 1}...</span>
+        {/* Skeleton page layout */}
+        <div className="flex h-full flex-col gap-3 p-5">
+          {/* Header bar */}
+          <div className="h-5 w-3/4 rounded bg-slate-200 animate-pulse" />
+          {/* Text lines */}
+          <div className="h-3 w-full rounded bg-slate-100 animate-pulse delay-75" />
+          <div className="h-3 w-5/6 rounded bg-slate-100 animate-pulse delay-100" />
+          {/* Image placeholder */}
+          <div className="flex-1 rounded bg-slate-200 animate-pulse delay-150" />
+          {/* Bottom text lines */}
+          <div className="h-3 w-full rounded bg-slate-100 animate-pulse delay-200" />
+          <div className="h-3 w-2/3 rounded bg-slate-100 animate-pulse delay-300" />
         </div>
+        {/* Shimmer overlay */}
+        <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+        {/* Page number */}
+        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-slate-300 font-medium">
+          {pageIndex + 1}
+        </span>
       </div>
     );
   }
@@ -187,14 +202,12 @@ function PageImage({ page, pageIndex, viewMode }: PageImageProps) {
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-lg bg-slate-200 h-full",
+          "flex flex-col items-center justify-center rounded-lg bg-white shadow-lg h-full aspect-[3/4]",
           viewMode === "single" ? "w-[300px]" : "w-[250px]",
         )}
       >
-        <div className="flex flex-col items-center gap-2 text-slate-400">
-          <span className="text-2xl font-bold">{pageIndex + 1}</span>
-          <span className="text-sm">{error || "Image not available"}</span>
-        </div>
+        <span className="text-3xl font-bold text-slate-200">{pageIndex + 1}</span>
+        <span className="mt-1 text-xs text-slate-400">{error || "Image not available"}</span>
       </div>
     );
   }
