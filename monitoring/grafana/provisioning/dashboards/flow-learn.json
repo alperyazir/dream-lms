@@ -178,40 +178,6 @@
       ]
     },
     {
-      "title": "Container CPU Usage",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 9, "x": 6, "y": 24 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "fieldConfig": {
-        "defaults": { "unit": "percentunit", "custom": { "fillOpacity": 10 } },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "rate(container_cpu_usage_seconds_total{name=~\"flow-(learn|central-storage).*\"}[5m])",
-          "legendFormat": "{{name}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "title": "Container Memory Usage",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 24 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "fieldConfig": {
-        "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10 } },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "container_memory_usage_bytes{name=~\"flow-(learn|central-storage).*\"}",
-          "legendFormat": "{{name}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
       "title": "Logs",
       "type": "logs",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 32 },

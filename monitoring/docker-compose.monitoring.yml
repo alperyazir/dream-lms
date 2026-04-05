@@ -24,8 +24,8 @@ services:
         max-file: "3"
     networks:
       - monitoring
-      - flow-learn_default
-      - flow-central-storage_default
+      - flow-learn_fl-internal
+      - flow-central-storage_fcs-internal
 
   grafana:
     image: grafana/grafana:11.1.0
@@ -126,28 +126,6 @@ services:
     networks:
       - monitoring
 
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
-    restart: unless-stopped
-    privileged: true
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "3"
-    networks:
-      - monitoring
-
 volumes:
   prometheus-data:
   grafana-data:
@@ -156,9 +134,9 @@ volumes:
 networks:
   monitoring:
     driver: bridge
-  flow-learn_default:
+  flow-learn_fl-internal:
     external: true
-  flow-central-storage_default:
+  flow-central-storage_fcs-internal:
     external: true
   traefik-public:
     external: true
