@@ -32,7 +32,6 @@ function BookCoverThumbnail({
 
   useEffect(() => {
     let isMounted = true;
-    let blobUrl: string | null = null;
 
     setImageError(false);
 
@@ -44,7 +43,6 @@ function BookCoverThumbnail({
 
       const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url;
         setCoverUrl(url);
         setIsLoading(false);
       }
@@ -54,9 +52,6 @@ function BookCoverThumbnail({
 
     return () => {
       isMounted = false;
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
     };
   }, [book.cover_image_url]);
 

@@ -127,10 +127,12 @@ export async function getBooks(
   const url = `/api/v1/books${queryString ? `?${queryString}` : ""}`;
 
   const response = await apiClient.get<BookListResponse>(url);
-  // Auto-register books for CDN URL building
+  // Auto-register books for CDN URL building and rewrite cover URLs to CDN
   for (const book of response.data.items) {
-    if (book.publisher_id && (book.book_name || (book as any).name)) {
-      registerBookForCdn(book.id, book.publisher_id, (book.book_name || (book as any).name)!);
+    const bookName = book.book_name || (book as any).name;
+    if (book.publisher_id && bookName) {
+      registerBookForCdn(book.id, book.publisher_id, bookName);
+      book.cover_image_url = buildBookCdnUrl(book.publisher_id, bookName, "images/book_cover.png");
     }
   }
   return response.data;
@@ -176,11 +178,13 @@ export async function getAuthenticatedCoverUrl(
 ): Promise<string | null> {
   if (!coverImageUrl) return null;
 
-  // Try to extract book ID from API cover URL pattern: /api/v1/books/{id}/cover
+  // Already a full CDN URL — use directly (no fetch needed)
+  if (coverImageUrl.startsWith("http")) return coverImageUrl;
+
+  // Try to resolve API cover URL to CDN: /api/v1/books/{id}/cover
   const match = coverImageUrl.match(/\/api\/v1\/books\/(\d+)\/cover/);
   if (match) {
-    const bookId = Number(match[1]);
-    const info = bookInfoCache.get(bookId);
+    const info = bookInfoCache.get(Number(match[1]));
     if (info) {
       return buildBookCdnUrl(info.publisherId, info.bookName, "images/book_cover.png");
     }
@@ -512,8 +516,10 @@ export async function getBook(bookId: string | number): Promise<Book> {
   const url = `/api/v1/books/${bookId}`;
   const response = await apiClient.get<Book>(url);
   const book = response.data;
-  if (book.publisher_id && (book.book_name || (book as any).name)) {
-    registerBookForCdn(book.id, book.publisher_id, (book.book_name || (book as any).name)!);
+  const bookName = book.book_name || (book as any).name;
+  if (book.publisher_id && bookName) {
+    registerBookForCdn(book.id, book.publisher_id, bookName);
+    book.cover_image_url = buildBookCdnUrl(book.publisher_id, bookName, "images/book_cover.png");
   }
   return book;
 }

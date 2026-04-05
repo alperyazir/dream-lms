@@ -35,12 +35,10 @@ export function BookCard({ book, onOpenFlowbook, onDownload }: BookCardProps) {
   const [isLoadingCover, setIsLoadingCover] = useState(true);
   const [imageError, setImageError] = useState(false);
 
-  // Fetch authenticated cover URL
+  // Fetch cover URL (CDN URLs returned directly, no blob needed)
   useEffect(() => {
     let isMounted = true;
-    let blobUrl: string | null = null;
 
-    // Reset error state when cover URL changes
     setImageError(false);
 
     async function fetchCover() {
@@ -51,7 +49,6 @@ export function BookCard({ book, onOpenFlowbook, onDownload }: BookCardProps) {
 
       const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url;
         setCoverUrl(url);
         setIsLoadingCover(false);
       }
@@ -59,12 +56,8 @@ export function BookCard({ book, onOpenFlowbook, onDownload }: BookCardProps) {
 
     fetchCover();
 
-    // Cleanup: revoke blob URL when component unmounts or cover changes
     return () => {
       isMounted = false;
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
     };
   }, [book.cover_image_url]);
 
