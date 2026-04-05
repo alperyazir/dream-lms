@@ -65,7 +65,6 @@ function BookDetailContent() {
   // Story 9.8: Fetch authenticated cover URL
   useEffect(() => {
     let isMounted = true;
-    let blobUrl: string | null = null;
 
     setImageError(false);
 
@@ -77,7 +76,6 @@ function BookDetailContent() {
 
       const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url;
         setCoverUrl(url);
         setIsLoadingCover(false);
       }
@@ -87,9 +85,6 @@ function BookDetailContent() {
 
     return () => {
       isMounted = false;
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
     };
   }, [book?.cover_image_url]);
 

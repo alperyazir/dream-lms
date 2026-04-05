@@ -68,10 +68,9 @@ export function BookDetailsDialog({
   const [assignmentToDelete, setAssignmentToDelete] =
     useState<BookAssignmentResponse | null>(null);
 
-  // Fetch cover image
+  // Fetch cover image (blob URLs are cached globally, no revoke needed)
   useEffect(() => {
     let isMounted = true;
-    let blobUrl: string | null = null;
 
     async function fetchCover() {
       if (!book.cover_image_url) {
@@ -81,7 +80,6 @@ export function BookDetailsDialog({
 
       const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url;
         setCoverUrl(url);
         setIsLoadingCover(false);
       }
@@ -93,9 +91,6 @@ export function BookDetailsDialog({
 
     return () => {
       isMounted = false;
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
     };
   }, [book.cover_image_url, isOpen]);
 

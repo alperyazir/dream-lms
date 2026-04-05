@@ -32,12 +32,10 @@ export function BookCover({
     !className?.includes("w-") && !className?.includes("h-");
   const { width, height } = sizeMap[size];
 
-  // Fetch authenticated cover URL
+  // Fetch authenticated cover URL (blob URLs are cached globally, no revoke needed)
   useEffect(() => {
     let isMounted = true;
-    let blobUrl: string | null = null;
 
-    // Reset error state when cover URL changes
     setImageError(false);
 
     async function fetchCover() {
@@ -48,7 +46,6 @@ export function BookCover({
 
       const url = await getAuthenticatedCoverUrl(coverUrl);
       if (isMounted) {
-        blobUrl = url;
         setAuthenticatedUrl(url);
         setIsLoadingCover(false);
       }
@@ -58,10 +55,6 @@ export function BookCover({
 
     return () => {
       isMounted = false;
-      // Cleanup blob URL
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
     };
   }, [coverUrl]);
 

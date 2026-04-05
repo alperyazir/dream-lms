@@ -165,28 +165,33 @@ export async function getBookById(bookId: number): Promise<Book | null> {
 }
 
 /**
- * Get authenticated book cover image URL
+ * Get book cover image URL.
  *
- * Fetches the cover image with authentication headers and returns a blob URL
- * that can be used in <img> tags.
- *
- * @param coverImageUrl - The cover_image_url from the book object
- * @returns Promise with blob URL string, or null if fetch fails
+ * If the book is registered in bookInfoCache, returns a direct CDN URL
+ * (no auth required, browser + Cloudflare cacheable). Falls back to
+ * fetching via authenticated API proxy otherwise.
  */
 export async function getAuthenticatedCoverUrl(
   coverImageUrl: string | null,
 ): Promise<string | null> {
   if (!coverImageUrl) return null;
 
+  // Try to extract book ID from API cover URL pattern: /api/v1/books/{id}/cover
+  const match = coverImageUrl.match(/\/api\/v1\/books\/(\d+)\/cover/);
+  if (match) {
+    const bookId = Number(match[1]);
+    const info = bookInfoCache.get(bookId);
+    if (info) {
+      return buildBookCdnUrl(info.publisherId, info.bookName, "images/book_cover.png");
+    }
+  }
+
+  // Fallback: fetch via authenticated API proxy
   try {
-    // Fetch image with authentication
     const response = await apiClient.get(coverImageUrl, {
       responseType: "blob",
     });
-
-    // Create blob URL
-    const blobUrl = URL.createObjectURL(response.data);
-    return blobUrl;
+    return URL.createObjectURL(response.data);
   } catch (error) {
     console.error("Failed to fetch book cover:", error);
     return null;

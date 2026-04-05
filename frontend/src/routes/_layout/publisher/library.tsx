@@ -60,10 +60,9 @@ function PublisherBookCard({
   const [isLoadingCover, setIsLoadingCover] = useState(true);
   const [imageError, setImageError] = useState(false);
 
-  // Fetch authenticated cover URL
+  // Fetch authenticated cover URL (blob URLs are cached globally, no revoke needed)
   useEffect(() => {
     let isMounted = true;
-    let blobUrl: string | null = null;
 
     setImageError(false);
 
@@ -75,7 +74,6 @@ function PublisherBookCard({
 
       const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url;
         setCoverUrl(url);
         setIsLoadingCover(false);
       }
@@ -85,9 +83,6 @@ function PublisherBookCard({
 
     return () => {
       isMounted = false;
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
     };
   }, [book.cover_image_url]);
 
