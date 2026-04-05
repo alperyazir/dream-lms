@@ -214,9 +214,18 @@ function PageImage({ page, pageIndex, viewMode }: PageImageProps) {
         )}
       />
 
-      {/* Interactive Overlays - positioned absolutely over the image */}
-      {imageUrl && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Interactive Overlays - sized to match the actual rendered image area */}
+      {imageUrl && displayDimensions.width > 0 && (
+        <div
+          className="absolute overflow-hidden pointer-events-none"
+          style={{
+            width: displayDimensions.width,
+            height: displayDimensions.height,
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
           {/* Fill Answer Overlays - clickable areas that show text answers */}
           {allFillAnswers.map((fillAnswer) => (
             <FillAnswerOverlay
